@@ -1,15 +1,15 @@
 /*
-  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  ThinksFish, a UCI chess playing engine derived from Stockfish
   Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
   Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
   Copyright (C) 2015-2017 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
 
-  Stockfish is free software: you can redistribute it and/or modify
+  ThinksFish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Stockfish is distributed in the hope that it will be useful,
+  ThinksFish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
@@ -143,11 +143,11 @@ void MovePicker::score<CAPTURES>() {
 template<>
 void MovePicker::score<QUIETS>() {
 
-  const ButterflyHistory& history = pos.this_thread()->history;
+  const HistoryStats& history = pos.this_thread()->history;
 
-  const PieceToHistory& cmh = *(ss-1)->history;
-  const PieceToHistory& fmh = *(ss-2)->history;
-  const PieceToHistory& fm2 = *(ss-4)->history;
+  const CounterMoveStats& cmh = *(ss-1)->counterMoves;
+  const CounterMoveStats& fmh = *(ss-2)->counterMoves;
+  const CounterMoveStats& fm2 = *(ss-4)->counterMoves;
 
   Color c = pos.side_to_move();
 
@@ -155,21 +155,21 @@ void MovePicker::score<QUIETS>() {
       m.value =  cmh[pos.moved_piece(m)][to_sq(m)]
                + fmh[pos.moved_piece(m)][to_sq(m)]
                + fm2[pos.moved_piece(m)][to_sq(m)]
-               + history[c][from_to(m)];
+               + history.get(c, m);
 }
 
 template<>
 void MovePicker::score<EVASIONS>() {
   // Try captures ordered by MVV/LVA, then non-captures ordered by stats heuristics
-  const ButterflyHistory& history = pos.this_thread()->history;
+  const HistoryStats& history = pos.this_thread()->history;
   Color c = pos.side_to_move();
 
   for (auto& m : *this)
       if (pos.capture(m))
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
-                   - Value(type_of(pos.moved_piece(m))) + (1 << 28);
+                   - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          m.value = history[c][from_to(m)];
+          m.value = history.get(c, m);
 }
 
 
